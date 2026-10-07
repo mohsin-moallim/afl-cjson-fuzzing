@@ -50,7 +50,8 @@ havoc/splice stage grew inputs nested deeply enough (crash files of 22–32 KB, 
 all brackets) to exhaust the stack, saving **5 unique stack-overflow crashes**. So a
 deep-recursion bug like this is a *slow* case for greybox fuzzing, not an impossible
 one: the fuzzer isn't steered toward it, but given enough time its mutations still
-reach it. (The directly-constructed input above reproduces the same crash instantly.)
+reach it. (The directly-constructed input above reproduces the same crash instantly; one
+of AFL's own saved crashes is committed here as `crash-deep.txt` — a 24 KB run of `[`.)
 
 ## Root cause & fix
 Unbounded recursion while parsing deeply nested JSON (CWE-674). Fixed upstream in
@@ -68,4 +69,5 @@ a bug unreachable from a short campaign.
 - `fuzz_cjson.c` — the harness
 - `build.sh`, `run.sh`, `reproduce.sh`
 - `seeds/` — starting inputs (including a deeply-nested one)
+- `crash-deep.txt` — an actual crash AFL saved during the campaign (`./reproduce.sh crash-deep.txt`)
 - cJSON itself is cloned separately (see Build & reproduce) and is not committed here
