@@ -1,0 +1,6 @@
+# fuzzer output + build artifacts
+out/
+fuzz_cjson
+*.o
+# the cloned library is not vendored into this repo
+cJSON/
