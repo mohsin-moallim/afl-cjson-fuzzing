@@ -41,21 +41,28 @@ recursing — `parse_array` → `parse_value` → `parse_array` → … once per
     ...  (this pair repeats thousands of times)
 ```
 
-## A note on fuzzer behaviour
-I also ran AFL++ as a coverage-guided campaign, but it did **not** save this crash on
-its own — which is expected. Deeper nesting doesn't reach new code (it's the same
-recursive edge repeated), so AFL gets no coverage reward for going deeper, and its
-input-*trimming* stage shrinks the nesting back down. Deep-recursion bugs are a known
-blind spot for mutation-based fuzzers. So the bug is demonstrated here with a
-directly-constructed deeply-nested input rather than left to AFL's mutation engine.
+## How long it took AFL to find it
+A short coverage-guided run (~10 min) saved nothing, which fits the theory: deeper
+nesting reaches no new code (it's the same recursive edge repeated), so AFL gets no
+coverage reward for going deeper, and its input-*trimming* stage shrinks the nesting
+back down. But left running longer — ~2.5 hours and ~8 million executions — AFL's
+havoc/splice stage grew inputs nested deeply enough (crash files of 22–32 KB, almost
+all brackets) to exhaust the stack, saving **5 unique stack-overflow crashes**. So a
+deep-recursion bug like this is a *slow* case for greybox fuzzing, not an impossible
+one: the fuzzer isn't steered toward it, but given enough time its mutations still
+reach it. (The directly-constructed input above reproduces the same crash instantly.)
 
 ## Root cause & fix
 Unbounded recursion while parsing deeply nested JSON (CWE-674). Fixed upstream in
 cJSON **v1.5.0** by adding a nesting-depth limit.
 
 ## What I learned
-Fuzzers have blind spots — they can't easily find deep-recursion bugs, because going
-deeper doesn't reach new code, so a coverage-guided fuzzer isn't pushed toward it.
+"Hard for a fuzzer" isn't "impossible." A short run found nothing and I almost
+concluded the bug was out of reach for fuzzing — but a 2.5-hour run found it on its
+own. Deep-recursion bugs are hard for coverage-guided fuzzers because going deeper
+reaches no new code, so the fuzzer isn't pushed toward them — yet enough run time still
+gets there. The real lesson: fuzzing results depend heavily on run time, so don't call
+a bug unreachable from a short campaign.
 
 ## Files
 - `fuzz_cjson.c` — the harness
